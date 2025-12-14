@@ -11,7 +11,7 @@ ifstream traceFileStream;
 void open_trace_file(string& traceFileName) {
     traceFileStream.open(traceFileName);
     if (!traceFileStream.is_open()) {
-        cerr << "Error: could not open trace file: " << traceFile << endl;
+        cerr << "Error: could not open trace file: " << traceFileName << endl;
         exit(1);
     }
 }

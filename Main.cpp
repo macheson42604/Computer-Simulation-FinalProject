@@ -1,10 +1,13 @@
 #include <iostream>
+#include <iomanip>
 #include <fstream>
 #include <vector>
 #include <cmath>
 #include <cstdlib>
 #include <string>
 #include <stdexcept>
+
+#include "Trace.h"
 
 using namespace std;
 
@@ -20,18 +23,19 @@ int main (int argc, char* argv[]) {
     string pieceFileName = argv[2];
 
     // Open input files
-    openTraceFile(traceFileName); // all errors and calls handled in Trace.cpp
+    open_trace_file(traceFileName); // all errors and calls handled in Trace.cpp
 
     ifstream pieceFile;
     pieceFile.open(pieceFileName);
     if (!pieceFile.is_open()) {
-        cerr << "Error: could not open trace file: " << pieceFile << endl;
+        cerr << "Error: could not open trace file: " << pieceFileName << endl;
         exit(1);
     }
     
     // Q input
+    int Q = -1;
     try {
-        int Q = stoi(argv[3]);
+        Q = stoi(argv[3]);
 
         // Check that input Q is within range
         if (Q <= 0) {
@@ -58,8 +62,8 @@ int main (int argc, char* argv[]) {
 
     // Read in first set of values from piecewise file
     if (pieceFile.eof()) {
-        cerr << "There are no values within piecewise input file: " << pieceFile << endl;
-        exit();
+        cerr << "There are no values within piecewise input file: " << pieceFileName << endl;
+        exit(1);
     }
 
     pieceFile >> x >> y;
@@ -101,7 +105,7 @@ int main (int argc, char* argv[]) {
 
     // Find quadratic coefficiencts
     vector<double> a, b, c;
-    for (int j = 1; j < xList.size(); j++) {
+    for (int j = 1; j < (int)xList.size(); j++) {
         double slope = (yList[j] - yList[j - 1]) / (xList[j] - xList[j - 1]);
 
         double Ai = slope / 2;
@@ -159,6 +163,8 @@ int main (int argc, char* argv[]) {
 void output(double& trueArrival) {
     // TODO: check if it's 6 digits after the decimal or 6 digits total
     // can use round() for cmath and multiply by 10^6, round then divide by 10^6
-    cout << "OUTPUT " << round(trueArrival * (1000000.0)) / 1000000.0;
-    cout << " " << round(trueArrival % t_K * (1000000.0)) / 1000000.0 << endl;
+    
+    cout << "OUTPUT " << fixed << setprecision(6) << trueArrival;
+    // TODO: check the wrapped arrival time
+    cout << " " << fmod(trueArrival, t_K) << endl; // trueArrival - t_K * (floor(trueArrival/t_K))
 }
