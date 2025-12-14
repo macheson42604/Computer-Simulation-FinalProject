@@ -11,6 +11,7 @@ using namespace std;
 void output(double& trueArrival);
 
 // TODO: we need a value to store t_K
+double t_K = -1.0;
 
 int main (int argc, char* argv[]) {
     /// READ IN COMMAND LINE ARGUMENTS ///
@@ -74,8 +75,17 @@ int main (int argc, char* argv[]) {
         yInput.push_back(y);
         i++;
     }
+    
+    // save the last time value 
+    t_K = xList[xList.size() -1];
 
+    // Error check that ish - ensure t_K was set
+    if (t_K == -1) {
+        cerr << "Error: t_K incorrectly set" << endl;
+        exit(1);
+    }
 
+    
     // Normalize data to create pdf
     for (int j = 0; j < (int)yInput.size(); j ++) {
         yList.push_back(yInput[j] / area);
@@ -147,5 +157,8 @@ int main (int argc, char* argv[]) {
 
 // TODO: print outputs
 void output(double& trueArrival) {
-
+    // TODO: check if it's 6 digits after the decimal or 6 digits total
+    // can use round() for cmath and multiply by 10^6, round then divide by 10^6
+    cout << "OUTPUT " << round(trueArrival * (1000000.0)) / 1000000.0;
+    cout << " " << round(trueArrival % t_K * (1000000.0)) / 1000000.0 << endl;
 }
