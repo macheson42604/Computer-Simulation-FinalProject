@@ -13,7 +13,6 @@ using namespace std;
 
 void output(double& trueArrival);
 
-// TODO: we need a value to store t_K
 double t_K = -1.0;
 
 int main (int argc, char* argv[]) {
@@ -144,7 +143,7 @@ int main (int argc, char* argv[]) {
             exit(1);
         }
 
-        // TODO: create function for these calucations
+        // TODO: maybe create function for these calucations
         double arrival1 = ( (-1) * b[index - 1] + pow(pow(b[index - 1], 2) - (4 * a[index - 1] * (c[index - 1] - uPrime)), 0.5) ) / (2 * a[index - 1]);
         double arrival2 = ( (-1) * b[index - 1] - pow(pow(b[index - 1], 2) - (4 * a[index - 1] * (c[index - 1] - uPrime)), 0.5) ) / (2 * a[index - 1]);
 
@@ -159,7 +158,6 @@ int main (int argc, char* argv[]) {
     return 0;
 }
 
-// TODO: print outputs
 void output(double& trueArrival) {
     // TODO: check if it's 6 digits after the decimal or 6 digits total
     // can use round() for cmath and multiply by 10^6, round then divide by 10^6
