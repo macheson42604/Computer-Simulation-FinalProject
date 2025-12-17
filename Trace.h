@@ -23,5 +23,6 @@ extern ifstream traceStream;
 
 void open_trace_file(string&);
 double get_traceValue();
+double exponential();
 
 #endif

@@ -12,7 +12,7 @@ TARGET = SIM
 TARGET_DEL = SIM.exe
 
 # Source files
-SRCS = Main.cpp Trace.cpp 
+SRCS = Main.cpp Trace.cpp Interval.cpp
 
 # Object files
 OBJS = $(SRCS:.cpp=.o)

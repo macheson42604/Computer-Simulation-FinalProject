@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <cmath>
 
 #include "Trace.h"
 
@@ -31,4 +32,8 @@ double get_traceValue() {
     }
 
     return traceValue;
+ }
+
+ double exponential() {
+    return (-1.0) * log(1.0 - get_traceValue());
  }

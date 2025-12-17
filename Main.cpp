@@ -1,41 +1,67 @@
 #include <iostream>
-#include <iomanip>
 #include <fstream>
 #include <vector>
 #include <cmath>
 #include <cstdlib>
 #include <string>
 #include <stdexcept>
+#include <iomanip>
 
 #include "Trace.h"
+#include "Interval.hpp"
 
 using namespace std;
 
-void output(double& trueArrival);
 
-double t_K = -1.0;
+
+void output(double t_K, double nextAlpha) {
+    // TODO: check if this is producing 6 sig figs
+    // showpoint shows tailing zeros
+    cout << "OUTPUT " << setprecision(6) << showpoint << nextAlpha;
+    // TODO: check the wrapped arrival time
+    cout << " " << nextAlpha - t_K * floor(nextAlpha/t_K) << endl;
+    // Previous fmod() function: cout << " " << fmod(nextAlpha, t_K) << endl; 
+   
+}
+
+
 
 int main (int argc, char* argv[]) {
-    /// READ IN COMMAND LINE ARGUMENTS ///
+    // -----------------------------------------------------------------------------
+    // INITIALIZE ALL IMPORTANT VARIABLES
+    // -----------------------------------------------------------------------------
+    int Q = -1; // initialize to -1 for error detection
+    // will contain all of the arrival times (by the end, the size of the vector should be the same as Q)
+    vector<double> alphaTimes; 
+    // vector of all the interval times
+    vector<Interval> intervals;
+    double t_K = -1.0;
+    double bigLambda_t_K = 0.0;
+
+
+    // -----------------------------------------------------------------------------
+    // READ IN COMMAND LINE ARGUMENT INFO
+    // -----------------------------------------------------------------------------
     // File inputs
+    if (argc != 4) {
+        cerr << "Error: incorrect number of command line arguments. There are only " << argc << " arguments passed" << endl;
+        exit(1);
+    }
     string traceFileName = argv[1];
     string pieceFileName = argv[2];
-
     // Open input files
     open_trace_file(traceFileName); // all errors and calls handled in Trace.cpp
 
-    ifstream pieceFile;
-    pieceFile.open(pieceFileName);
-    if (!pieceFile.is_open()) {
+    ifstream piecewiseFile;
+    piecewiseFile.open(pieceFileName);
+    if (!piecewiseFile.is_open()) {
         cerr << "Error: could not open trace file: " << pieceFileName << endl;
         exit(1);
     }
     
-    // Q input
-    int Q = -1;
+    // Set Q value
     try {
         Q = stoi(argv[3]);
-
         // Check that input Q is within range
         if (Q <= 0) {
             cerr << "Error: Q must be larger than 0, you input: " << Q << endl;
@@ -50,119 +76,89 @@ int main (int argc, char* argv[]) {
         cerr << "Error: Out of range error caught: " << e.what() << endl;
         exit(1);
     }
+    
 
-    /// INITIALIZATIONS ///
-    double x, y;
-    double area = 0;
-    int i = 0;
-    vector<double> xList, yList, yInput, cdf;
+    // -----------------------------------------------------------------------------
+    // READ IN FILE TO CREATE INTERVAL OBJECTS
+    // -----------------------------------------------------------------------------
+    int i = 0; // counter to include in each of the interval objects
+    double t_i = 0.0;
+    double bigLambda_i = 0.0;
+    double t_i1, lambda;
+    while (piecewiseFile >> t_i1 >> lambda) {
+        Interval interval(t_i, t_i1, bigLambda_i, lambda, i);
+        intervals.push_back(interval);
 
-    /// RUN PROGRAM ///
-
-    // Read in first set of values from piecewise file
-    if (pieceFile.eof()) {
-        cerr << "There are no values within piecewise input file: " << pieceFileName << endl;
-        exit(1);
+        t_i = t_i1;
+        bigLambda_i += lambda * (t_i1);
+        i ++;
     }
+    
+    // Set t_K to the last read in value;
+    t_K = intervals[intervals.size() - 1].get_tRight();
+    bigLambda_t_K = intervals[intervals.size() - 1].get_bigLambdaRight();
 
-    pieceFile >> x >> y;
-    xList.push_back(x);
-    yInput.push_back(y);
-    i ++;
 
-    // Read in rest of values from piecewise file
-    while (pieceFile >> x >> y) {
-        area += ((yInput[i - 1] + y) / 2) * (x - xList[i - 1]);
+    // -----------------------------------------------------------------------------
+    // LOOP UNTIL ALL Q ARRIVALS HAVE BEEN CREATED
+    // -----------------------------------------------------------------------------
+    // additional variables that will be used and changed within the while loop
+    double a_i = 0.0; // a_i
+    double a_i1 = 0.0; // a_{i+1}
+    double alpha_i = 0.0; // alpha_i (we can still use this variable to represent alpha_{i+1})
+    int j_i = 0;
+    int j_i1 = -1;
+    double currBigLambda = 0.0;
+    double nextBigLambda = 0.0;
+    int w = 0; 
+    
+    while ((int)alphaTimes.size() < Q) {
+        // implement the algorithm provided in page 7
+        a_i = alpha_i - (floor(alpha_i / t_K)* t_K);
+
+        // set correct interval
+        j_i = 0;
+        while (a_i > intervals[j_i].get_tRight()) {
+            j_i ++;
+        }
+    
+        // calculate the correct total arrivals for a_i and a_i1
+        currBigLambda = intervals[j_i].get_bigLambdaLeft() + (intervals[j_i].get_lambda() * (a_i - intervals[j_i].get_tLeft()));
+        nextBigLambda = currBigLambda + exponential();
+    
+        // calculate the wrap around
+        w = floor(nextBigLambda / bigLambda_t_K);
+        // decremenent nextBigLambda by w * bigLambda_t_K in order to get correct adjested total number of arrivals for given next arrival time
+        nextBigLambda -= w * bigLambda_t_K;
+
+        // fix the correct interval if needed
+        if (nextBigLambda < intervals[j_i].get_bigLambdaLeft()) {
+            j_i = 0;
+        }
+
+        // find the next interval
+        j_i1 = j_i; // start off in current interval
+        while (nextBigLambda > intervals[j_i1].get_bigLambdaRight()) {
+            j_i1 ++;
+        }
         
-        xList.push_back(x);
-        yInput.push_back(y);
-        i++;
-    }
-    
-    // save the last time value 
-    t_K = xList[xList.size() -1];
+        // calculate the next wrapped arrival time (a_i1)
+        a_i1 = ((nextBigLambda - intervals[j_i1].get_bigLambdaLeft()) / intervals[j_i1].get_lambda()) + intervals[j_i1].get_tLeft();
+        
+        // get alpha_i1
+        alpha_i = alpha_i + (a_i1 - a_i) + (t_K * w);
+        alphaTimes.push_back(alpha_i);
 
-    // Error check that ish - ensure t_K was set
-    if (t_K == -1) {
-        cerr << "Error: t_K incorrectly set" << endl;
+        // output
+        output(t_K, alpha_i);
+    }
+
+    // check the the lists are the size of Q
+    if ((int)alphaTimes.size() != Q) {
+        cerr << "Error: Q number of actual arrival times not calculated. " << alphaTimes.size() << " number of actual arrival times calculated" << endl;
         exit(1);
     }
 
-    
-    // Normalize data to create pdf
-    for (int j = 0; j < (int)yInput.size(); j ++) {
-        yList.push_back(yInput[j] / area);
-    }
-
-    // Convert pdf to cdf
-    double cdfArea = 0;
-    cdf.push_back(0.0);
-    for (int j = 1; j < (int)yList.size(); j ++) {
-        cdfArea += ((yList[j] + yList[j - 1]) / 2) * (xList[j] - xList[j - 1]); // area of a trapazoid = ((a + b) / 2) * height, where a and b are the lengths of the parallel sides
-        cdf.push_back(cdfArea);
-    }
-
-    // Find quadratic coefficiencts
-    vector<double> a, b, c;
-    for (int j = 1; j < (int)xList.size(); j++) {
-        double slope = (yList[j] - yList[j - 1]) / (xList[j] - xList[j - 1]);
-
-        double Ai = slope / 2;
-        double Bi = yList[j - 1] - slope * xList[j - 1];
-        double Ci = -(Ai * xList[j - 1] * xList[j - 1] + Bi * xList[j - 1]);
-
-        a.push_back(Ai);
-        b.push_back(Bi);
-        c.push_back(Ci);
-    }
-
-    // Generate arrivals based on cdf and coefficient equations
-    for (int n = 0; n < Q; n ++) {
-        double u = get_traceValue();
-        double uPrime = -1.0;
-        int index = -1;
-
-        for (int j = 1; j < (int)cdf.size(); j ++) {
-            if (u < cdf[j]) {
-                index = j;
-                break;
-            }
-        }
-
-        // Error check that ish - ensure an index was found
-        if (index == -1) {
-            cerr << "Error: no index was found where u < cdf_i" << endl;
-            exit(1);
-        }
-
-        uPrime = u - cdf[index - 1];
-
-        // Error check that ish - ensure a uPrime was found
-        if (uPrime < 0) {
-            cerr << "Error: u' was incorrectly calculated to: " << uPrime << endl;
-            exit(1);
-        }
-
-        // TODO: maybe create function for these calucations
-        double arrival1 = ( (-1) * b[index - 1] + pow(pow(b[index - 1], 2) - (4 * a[index - 1] * (c[index - 1] - uPrime)), 0.5) ) / (2 * a[index - 1]);
-        double arrival2 = ( (-1) * b[index - 1] - pow(pow(b[index - 1], 2) - (4 * a[index - 1] * (c[index - 1] - uPrime)), 0.5) ) / (2 * a[index - 1]);
-
-        // Choose which value to keep
-        if (arrival1 >= xList[index - 1] && arrival1 <= xList[index]) {
-            output(arrival1);
-        } else {
-            output(arrival2);
-        }
-    }
-    
     return 0;
 }
 
-void output(double& trueArrival) {
-    // TODO: check if it's 6 digits after the decimal or 6 digits total
-    // can use round() for cmath and multiply by 10^6, round then divide by 10^6
-    
-    cout << "OUTPUT " << fixed << setprecision(6) << trueArrival;
-    // TODO: check the wrapped arrival time
-    cout << " " << fmod(trueArrival, t_K) << endl; // trueArrival - t_K * (floor(trueArrival/t_K))
-}
