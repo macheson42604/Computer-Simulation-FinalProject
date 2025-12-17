@@ -20,6 +20,11 @@ void output(double t_K, double nextAlpha) {
 
     double wrappedTime = nextAlpha - t_K * floor(nextAlpha/t_K);
 
+    if (wrappedTime >= t_K) {
+        cerr << "Error: wrappedTIme >= t_K: " << wrappedTime << endl;
+        exit(1);
+    }
+    
     // edge cases if there is a floating point error
     if (wrappedTime >= t_K - eps) {
         wrappedTime = 0.0;
@@ -28,7 +33,6 @@ void output(double t_K, double nextAlpha) {
         wrappedTime = 0.0;
     }
 
-    
 
     cout << "OUTPUT " << setprecision(6) << showpoint << nextAlpha;
     // TODO: check the wrapped arrival time
@@ -139,11 +143,16 @@ int main (int argc, char* argv[]) {
     while ((int)alphaTimes.size() < Q) {
         // implement the algorithm provided in page 7
         a_i = alpha_i - (floor(alpha_i / t_K)* t_K);
-
+        
         // set correct interval
         j_i = 0;
-        while (a_i > intervals[j_i].get_tRight()) {
+        while (j_i < (int)intervals.size() && a_i > intervals[j_i].get_tRight()) {
             j_i ++;
+        }
+
+        if (j_i > (int)intervals.size() - 1) {
+            cerr << "j_i out of range: " << j_i << endl;
+            exit(1);
         }
     
         // calculate the correct total arrivals for a_i and a_i1
@@ -162,8 +171,13 @@ int main (int argc, char* argv[]) {
 
         // find the next interval
         j_i1 = j_i; // start off in current interval
-        while (nextBigLambda > intervals[j_i1].get_bigLambdaRight()) {
+        while (j_i1 < (int)intervals.size() && nextBigLambda > intervals[j_i1].get_bigLambdaRight()) {
             j_i1 ++;
+        }
+
+        if (j_i1 > (int)intervals.size() - 1) {
+            cerr << "j_i1 out of range: " << j_i1 << endl;
+            exit(1);
         }
         
         // set to previous time if lambda was 0
@@ -172,10 +186,30 @@ int main (int argc, char* argv[]) {
             a_i1 = ((nextBigLambda - intervals[j_i1].get_bigLambdaLeft()) / intervals[j_i1].get_lambda()) + intervals[j_i1].get_tLeft();
         }        
 
+        double epsilon = 1e-9;
+        if (a_i1 >= t_K - epsilon) {
+            a_i1 = 0.0;  // Wrap to start of cycle
+        }
 
         // get alpha_i1
         alpha_i = alpha_i + (a_i1 - a_i) + (t_K * w);
+        // edge case for the first time alpha_i is reaching t_K
+        if (alpha_i - t_K < epsilon) {
+            alpha_i = t_K;
+        }
+
+
         alphaTimes.push_back(alpha_i);
+
+        // DEBUG
+        if (alphaTimes.size() - 1 == 23498) {
+            cerr << "alpha_i: " << alpha_i << endl;
+            cerr << "t_K: " << t_K << endl;
+            cerr << "intervals[j_i1].get_bigLambdaRight(): " << intervals[j_i1].get_bigLambdaRight() << endl;
+            cerr << "j_i: " << j_i << endl;
+            cerr << "wrappedTime: " << alpha_i - t_K * floor(alpha_i/t_K) << endl;
+
+        }
 
         // output
         output(t_K, alpha_i);

@@ -193,6 +193,12 @@ int main (int argc, char* argv[]) {
 
         // get alpha_i1
         alpha_i = alpha_i + (a_i1 - a_i) + (t_K * w);
+        // edge case for the first time alpha_i is reaching t_K
+        if (alpha_i - t_K < epsilon) {
+            alpha_i = t_K;
+        }
+
+
         alphaTimes.push_back(alpha_i);
 
         // DEBUG
