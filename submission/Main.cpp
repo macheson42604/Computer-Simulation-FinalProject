@@ -200,17 +200,6 @@ int main (int argc, char* argv[]) {
 
 
         alphaTimes.push_back(alpha_i);
-
-        // DEBUG
-        if (alphaTimes.size() - 1 == 23498) {
-            cerr << "alpha_i: " << alpha_i << endl;
-            cerr << "t_K: " << t_K << endl;
-            cerr << "intervals[j_i1].get_bigLambdaRight(): " << intervals[j_i1].get_bigLambdaRight() << endl;
-            cerr << "j_i: " << j_i << endl;
-            cerr << "wrappedTime: " << alpha_i - t_K * floor(alpha_i/t_K) << endl;
-
-        }
-
         // output
         output(t_K, alpha_i);
     }
