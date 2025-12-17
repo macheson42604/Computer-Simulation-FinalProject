@@ -8,7 +8,7 @@ Interval::Interval(double tL, double tR, double bigLambL, double lamb, int j) {
     lambda = lamb;
     id = j;
 
-    bigLambdaRight = tLeft + (lambda * (tRight - tLeft));
+    bigLambdaRight = bigLambdaLeft + (lambda * (tRight - tLeft));
 }
 
 // Getters
