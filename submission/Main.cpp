@@ -12,14 +12,25 @@
 
 using namespace std;
 
+void print6Sig(double x) {
+    if (x == 0.0) {
+        cout << "0.00000";
+        return;
+    }
 
+    int digits = static_cast<int>(floor(log10(fabs(x))));
+    int decimals = 6 - digits - 1;
+    if (decimals < 0) decimals = 0;
+
+    cout << fixed << setprecision(decimals) << x;
+}
 
 void output(double t_K, double nextAlpha) {
     // TODO: check if this is producing 6 sig figs
     // showpoint shows tailing zeros
-    cout << "OUTPUT " << setprecision(6) << showpoint << nextAlpha;
+    cout << "OUTPUT " << setprecision(6) << showpoint << nextAlpha << " ";
     // TODO: check the wrapped arrival time
-    cout << " " << nextAlpha - t_K * floor(nextAlpha/t_K) << endl;
+    cout << " " << (nextAlpha - t_K * floor(nextAlpha/t_K)) << endl;
     // Previous fmod() function: cout << " " << fmod(nextAlpha, t_K) << endl; 
    
 }
@@ -89,8 +100,14 @@ int main (int argc, char* argv[]) {
         Interval interval(t_i, t_i1, bigLambda_i, lambda, i);
         intervals.push_back(interval);
 
+
+        if (t_i1 < t_i) {
+            cerr << "Error: t_i+1 is less than t_i" << endl;
+            exit(1);
+        }
+        
+        bigLambda_i += lambda * (t_i1 - t_i);
         t_i = t_i1;
-        bigLambda_i += lambda * (t_i1);
         i ++;
     }
     
