@@ -1,6 +1,6 @@
 # File to ignore for git
 *.o
-*.pdf
+#*.pdf
 *-plot*
 
 SIM
